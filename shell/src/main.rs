@@ -1,13 +1,16 @@
 use std::env::*;
 use std::io::{ Write};
 use std::io::*;
-// use shell::*;
+// use dirs::*; 
  
 fn main()  {
 
 let mut input = String::new();
 loop {
-    print!("@Trivia_Shell:$ ");
+    let cwd = current_dir().unwrap();
+    let display_dir = cwd.to_string_lossy().replace(&var("HOME").unwrap_or_default(), "~");
+
+    print!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", display_dir);
     stdout().flush().unwrap(); 
     
     input.clear();
@@ -40,6 +43,19 @@ loop {
                     }
                 }
             }
+
+            "cd" => {
+                let new_dir = if args.is_empty() {
+                    dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"))
+                } else {
+                    if args.len() != 1 { println!("cd: too many arguments"); continue;}
+                    std::path::PathBuf::from(args[0])
+                };
+
+                if let Err(e) = set_current_dir(&new_dir) {
+                    println!("cd: {}: {}", new_dir.display(), e);
+                }
+            },
 
             // _ if input.starts_with("rm") => {
             //     let mut rm = input.split_whitespace();

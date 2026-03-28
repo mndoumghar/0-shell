@@ -1,7 +1,6 @@
 build:
-	cargo build
+	@cargo build
 
-run:
 run:
 	@echo "███████╗██╗  ██╗███████╗██╗     ██╗"
 	@echo "██╔════╝██║  ██║██╔════╝██║     ██║"
@@ -13,6 +12,6 @@ run:
 	
 
 clean:
-	cargo clean
+	@cargo clean
 
-re: clean run
+# re: clean run
