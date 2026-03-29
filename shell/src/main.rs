@@ -1,6 +1,7 @@
 mod cmd;
 mod error;
 use cmd::rm::Rm;
+use cmd::mkdir::Mkdir;
 use std::env::*;
 use std::io::Write;
 use std::io::*;
@@ -59,9 +60,16 @@ fn main() {
                     eprintln!("{}", e);
                 }
             }
+            "mkdir" => {
+                let mkdir_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+                let mkdir_cmd = Mkdir::new(mkdir_args);
+                if let Err(e) = mkdir_cmd.execute() {
+                    eprintln!("{}", e);
+                }
+            }
+            
 
             "cd" => {
-                println!("cd   {:?}", args);
                 let new_dir = if args.is_empty() {
                     dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"))
                 } else {
