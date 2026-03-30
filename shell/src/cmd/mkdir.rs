@@ -1,42 +1,34 @@
 use crate::error::ShellError;
-pub use std::fs;
-pub use std::path::Path;
+use std::fs;
+use std::path::{PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct Mkdir {
     pub targets: Vec<String>,
+    pub cwd: PathBuf, // current working directory
 }
 
 impl Mkdir {
-    pub fn new(args: Vec<String>) -> Self {
-        let mut targets = Vec::new();
-        for arg in args.iter() {
-            targets.push(arg.to_string());
-        }
-        Self {
-            targets
-        }
+    pub fn new(targets: Vec<String>, cwd: PathBuf) -> Self {
+        Self { targets, cwd }
     }
 
     pub fn execute(&self) -> Result<(), ShellError> {
         if self.targets.is_empty() {
             return Err(ShellError::Other("mkdir: missing operand".into()));
         }
-        for target in &self.targets {
-            self.create_target(target)?;
-        }
-      
-          Ok(())
-    }
 
- fn create_target(&self, target: &str) -> Result<(), ShellError> {
-        let path = Path::new(target);
-        if path.exists() {
-            eprintln!("mkdir: cannot creat directory '{}': File exists", target);
-            return Ok(());
+        for dir in &self.targets {
+        if dir.starts_with("-") {
+           return Err(ShellError::Other(format!("mkdir: Cannot create directory '{}' ", dir).into()));
+
         }
-        fs::create_dir_all(path)
-        .map_err(|e| ShellError::Other(format!("mkdir: cannot create '{}': {}", target, e)))?;
+            let path = self.cwd.join(dir);
+            if let Err(e) = fs::create_dir(&path) {
+                println!("mkdir: cannot create directory '{}': {}", dir, e);
+            }
+        }
+
         Ok(())
     }
 }
