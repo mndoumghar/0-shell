@@ -1,110 +1,112 @@
 mod cmd;
 mod error;
 
-use cmd::rm::Rm;
+use cmd::cp::Cp;
 use cmd::mkdir::Mkdir;
 use cmd::mv::Mv;
-use cmd::cp::Cp;
+use cmd::rm::Rm;
 
-use std::env::*;
-use std::io::{self};
 use rustyline::DefaultEditor;
+use std::env::*;
 use std::fs;
+use std::io;
 
 fn main() {
-    // Initialize rustyline editor for input and history
     let mut rl = DefaultEditor::new().unwrap();
     let mut last_dir = current_dir().unwrap_or_else(|_| dirs::home_dir().unwrap());
 
     loop {
-        // Safe current directory for prompt
+        // safe current directory for prompt
         let cwd = match current_dir() {
-            Ok(dir) => {
-                last_dir = dir.clone();
-                dir
-            },
+            Ok(dir) => { last_dir = dir.clone(); dir}
             Err(_) => last_dir.clone(),
         };
+
         let display_dir = cwd.to_string_lossy().replace(&var("HOME").unwrap_or_default(), "~");
 
-        // Read input from user using rustyline
-        let input: String = match rl.readline(&format!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", display_dir)) {
+        // read command line
+        let input = match rl.readline(&format!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", display_dir)) {
             Ok(line) => line,
-            Err(_) => break, // Ctrl+D exits shell
+            Err(_) => break,
         };
 
-        if input.trim().is_empty() { 
-            continue; 
-        }
+        let input = input.trim();
+        if input.is_empty() { continue;}
 
-        rl.add_history_entry(input.trim()).unwrap();
-        let parts: Vec<&str> = input.trim().split_whitespace().collect();
+        rl.add_history_entry(input).unwrap();
+
+        let parts: Vec<&str> = input.split_whitespace().collect();
         let cmd = parts[0];
-        let args = &parts[1..];
+        let args: Vec<String> = parts[1..].iter().map(ToString::to_string).collect();
 
         match cmd {
             "exit" => break,
-            "echo" => println!("{}", args.join(" ")),
-            "pwd" => println!("{}", current_dir().unwrap().display()),
+
+            "echo" => {
+                println!("{}", args.join(" "));
+            }
+
+            "pwd" => match current_dir() {
+                Ok(dir) => println!("{}", dir.display()),
+                Err(_) => println!("pwd: current directory not found"),
+            },
+
             "cat" => {
                 if args.is_empty() {
                     let mut line = String::new();
                     while io::stdin().read_line(&mut line).unwrap() > 0 {
-                        print!("{}", line);
-                        line.clear();
+                        print!("{}", line); line.clear();
                     }
                 } else {
-                    for file in args {
+                    for file in &args {
                         match fs::read_to_string(file) {
                             Ok(content) => print!("{}", content),
-                            Err(_) => println!("cat: {}: No such file or directory", file),
+                            Err(_) => { println!("cat: {}: No such file or directory", file) }
                         }
                     }
                 }
-            },
+            }
+
             "mv" => {
-                let mv_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-                let mv_cmd = Mv::new(mv_args);
-                if let Err(e) = mv_cmd.execute() {
+
+                
+
+
+
+                if let Err(e) = Mv::new(args.clone()).execute() {
                     eprintln!("{}", e);
                 }
-            },
+            }
+
             "cp" => {
-                let cp_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-                let cp_cmd = Cp::new(cp_args);
-                if let Err(e) = cp_cmd.execute() {
+                if let Err(e) = Cp::new(args.clone()).execute() {
                     eprintln!("{}", e);
                 }
-            },
+            }
+
             "rm" => {
-                let rm_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-                let rm_cmd = Rm::new(rm_args);
-                if let Err(e) = rm_cmd.execute() {
+                if let Err(e) = Rm::new(args.clone()).execute() {
                     eprintln!("{}", e);
                 }
-            },
+            }
+
             "mkdir" => {
-                let mkdir_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-                let mkdir_cmd = Mkdir::new(mkdir_args, cwd);
-                if let Err(e) = mkdir_cmd.execute() {
+                if let Err(e) = Mkdir::new(args.clone(), cwd.clone()).execute() {
                     eprintln!("{}", e);
                 }
-            },
+            }
+
             "cd" => {
                 let new_dir = if args.is_empty() {
                     dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"))
                 } else {
-                    if args.len() != 1 {
-                        println!("cd: too many arguments");
-                        continue;
-                    }
-                    std::path::PathBuf::from(args[0])
+                    if args.len() != 1 { println!("cd: too many arguments"); continue;}
+                    std::path::PathBuf::from(&args[0])
                 };
+                
+                if let Err(e) = set_current_dir(&new_dir) { println!("cd: {}: {}", new_dir.display(), e) }
+            }
 
-                if let Err(e) = set_current_dir(&new_dir) {
-                    println!("cd: {}: {}", new_dir.display(), e);
-                }
-            },
             _ => println!("Command '{}' not found", cmd),
         }
     }
