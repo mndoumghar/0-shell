@@ -1,85 +1,40 @@
 use crate::error::ShellError;
-pub use std::fs;
-pub use std::path::Path;
+use std::fs;
+use std::path::Path;
+
 #[derive(Debug, Clone)]
-
-
 pub struct Mv {
-    pub flag: bool,
     pub targets: Vec<String>,
 }
 
 impl Mv {
     pub fn new(args: Vec<String>) -> Self {
-        let mut flag = false;
-        let mut targets = Vec::new();
-        for arg in args.iter() {
-            if arg == "-r" || arg == "-R" {
-                flag = true;
-            } else if arg.starts_with('-') {
-                for c in arg[1..].chars() {
-                    if c != 'r' && c != 'R' {
-                        println!("flag: invalid option -- '{}'", c);                       
-                    }
-                }
-
-                flag = true;
-            } else {
-                targets.push(arg.clone());
-            } 
-        }
-        
-        Self {
-            flag,
-            targets,
-        }
+        Self { targets: args }
     }
 
-    pub fn execute(&self) -> Result<() ,ShellError> {
-        if self.targets.is_empty() {
-           return Err(ShellError::Other("rm: missing operand".into()));
+    pub fn execute(&self) -> Result<(), ShellError> {
+        if self.targets.len() < 2 { println!("mv: missing file or destination"); return Ok(());}
+
+        let destination = Path::new(&self.targets[self.targets.len() - 1]);
+
+        if self.targets.len() > 2 && !(destination.exists() && destination.is_dir()) {
+            println!("mv: target '{}' is not a directory", destination.display());
+            return Ok(());
+        }
+        if  Path::new(&self.targets[0]).is_file() &&  self.targets[0] == format!("{}", destination.display()) { println!("mv: {} and {} are the same file", self.targets[0], self.targets[0]); return Ok(());  }
+
+        for source in &self.targets[..self.targets.len() - 1] {
+            let source_path = Path::new(source);
+
+            let final_dest = if destination.exists() && destination.is_dir() { // move 
+                destination.join(source_path.file_name().unwrap())
+            }else { destination.to_path_buf() }; //rename
+
+            if let Err(_) = fs::rename(source_path, &final_dest) {
+                println!("mv: cannot move '{}' to '{}'", source, final_dest.display() );
+            }
         }
 
-        for target in &self.targets {
-            self.remove_target(target)?;
-        }
         Ok(())
     }
-
-    pub fn remove_target(&self, target: &str) -> Result<(), ShellError> {
-            if Self::is_protected_path(target) {
-                eprintln!("rm: refusing to remove '.' or '..' : skipping '{}'", target);
-                return Ok(());
-            }
-            let path = Path::new(target);
-            let meta = match fs::symlink_metadata(path) {
-                Ok(m) => m,
-                Err(_) => {
-                    eprintln!("rm: cannot remove '{}': No such file or directory", target);
-                    return Ok(());
-                }
-            };
-
-                if meta.is_symlink() || meta.is_file() {
-                    fs::remove_file(path)
-                        .map_err(|e| ShellError::Other(format!("rm: cannot remove '{}': {}", target, e)))?;
-                        return Ok(());
-                }
-                if meta.is_dir() {
-                    if self.flag {
-                        fs::remove_dir_all(path)
-                            .map_err(|e| ShellError::Other(format!("rm: cannot remove '{}': {}", target, e)))?;
-                    } else {
-                        eprintln!("rm: remove '{}':  Is directory", target);
-                    }
-                }
-                Ok(())
-        }
-
-    pub fn is_protected_path(target: &str) -> bool {
-            matches!(target, "." | "..")
-        }
-
-
-    
 }
