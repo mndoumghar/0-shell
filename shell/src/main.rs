@@ -68,11 +68,6 @@ fn main() {
             }
 
             "mv" => {
-
-                
-
-
-
                 if let Err(e) = Mv::new(args.clone()).execute() {
                     eprintln!("{}", e);
                 }
