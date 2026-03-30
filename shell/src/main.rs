@@ -1,3 +1,7 @@
+mod cmd;
+mod error;
+use cmd::rm::Rm;
+use cmd::mkdir::Mkdir;
 use rustyline::DefaultEditor;
 use std::env::*;
 use std::fs;
@@ -64,16 +68,30 @@ fn main() {
                     last_dir = new_dir.clone(); // update last_dir if cd succeeds
                 }
             },
-            "mkdir" => {
-                if args.is_empty() { println!("mkdir: missing operand"); continue; }
-
-                for dir in args {
-                    let path = cwd.join(dir); // safe mkdir relative to cwd
-                    if let Err(e) = fs::create_dir(&path) {
-                        println!("mkdir: cannot create directory '{}': {}", dir, e);
-                    }
+             "rm" => {
+                let rm_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+                let rm_cmd = Rm::new(rm_args);
+                if let Err(e) = rm_cmd.execute() {
+                    eprintln!("{}", e);
                 }
             },
+            "mkdir" => {
+                let mkdir_args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+                let mkdir_cmd = Mkdir::new(mkdir_args);
+                if let Err(e) = mkdir_cmd.execute() {
+                    eprintln!("{}", e);
+                }
+            },
+            // "mkdir" => {
+            //     if args.is_empty() { println!("mkdir: missing operand"); continue; }
+            //     for dir in args {
+            //         let path = cwd.join(dir); // safe mkdir relative to cwd
+            //         if let Err(e) = fs::create_dir(&path) {
+            //             println!("mkdir: cannot create directory '{}': {}", dir, e);
+            //         }
+            //     }
+            // },
+            
             _ => println!("Command '{}' not found", cmd),
         }
     }
