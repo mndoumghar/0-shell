@@ -43,15 +43,17 @@ fn main() {
         rl.add_history_entry(input).unwrap();
 
         let parts: Vec<&str> = input.split_whitespace().collect();
-        let cmd = parts[0];
-        let args: Vec<String> = parts[1..].iter().map(ToString::to_string).collect();
+        let cmd = parts[0].trim_matches(|c| c == '"');
+        let args: Vec<String> = parts[1..].iter().map(|c| c.to_string()).collect();
 
         match cmd {
 
             "exit" => break,
 
             "echo" => {
-                let output: Vec<String> = args.iter().map(|s| { s.trim_start_matches('"').trim_end_matches('"').to_string() }).collect();
+                let output: Vec<String> = args.iter().map(|s| {
+                    s.trim_matches(|c| c == '"').to_string()
+                }).collect();
                 println!("{}", output.join(" "));
             }
 
