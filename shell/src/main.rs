@@ -5,6 +5,8 @@ use cmd::cp::Cp;
 use cmd::mkdir::Mkdir;
 use cmd::mv::Mv;
 use cmd::rm::Rm;
+use cmd::ls::LsCommand;
+use cmd::Command;
 
 use rustyline::DefaultEditor;
 use std::env::*;
@@ -40,6 +42,12 @@ fn main() {
         let args: Vec<String> = parts[1..].iter().map(ToString::to_string).collect();
 
         match cmd {
+            "ls" => {
+    let command = LsCommand;
+    if let Err(e) = command.execute(args.clone()) {
+        eprintln!("{}", e);
+    }
+},
             "exit" => break,
 
             "echo" => {

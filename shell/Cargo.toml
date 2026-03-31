@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 dirs = "5.0"
 rustyline = "18.0.0"
+chrono = "0.4"        
+libc = "0.2" 
