@@ -8,7 +8,7 @@ pub struct Flags {
 }
 
 #[derive(Debug, Clone)]
-
+#[allow(dead_code)]
 pub struct LongEntry {
     pub perms: String,
     pub links: String,

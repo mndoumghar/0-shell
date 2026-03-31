@@ -2,16 +2,18 @@ mod cmd;
 mod error;
 
 use cmd::cp::Cp;
+use cmd::cat::Cat;
 use cmd::mkdir::Mkdir;
 use cmd::mv::Mv;
 use cmd::rm::Rm;
 use cmd::ls::LsCommand;
 use cmd::Command;
-
+use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::env::*;
-use std::fs;
-use std::io;
+use std::io::*;
+// use std::fs;
+// use std::io;
 
 fn main() {
     let mut rl = DefaultEditor::new().unwrap();
@@ -29,8 +31,11 @@ fn main() {
         // read command line
         let input = match rl.readline(&format!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", display_dir)) {
             Ok(line) => line,
-            Err(_) => break,
+            Err(ReadlineError::Interrupted) => {continue;}
+                Err(ReadlineError::Eof) => { println!("exit"); break;}
+            Err(err) => { println!("error: {}", err); break; }
         };
+
 
         let input = input.trim();
         if input.is_empty() { continue;}
@@ -42,16 +47,12 @@ fn main() {
         let args: Vec<String> = parts[1..].iter().map(ToString::to_string).collect();
 
         match cmd {
-            "ls" => {
-    let command = LsCommand;
-    if let Err(e) = command.execute(args.clone()) {
-        eprintln!("{}", e);
-    }
-},
+
             "exit" => break,
 
             "echo" => {
-                println!("{}", args.join(" "));
+                let output: Vec<String> = args.iter().map(|s| { s.trim_start_matches('"').trim_end_matches('"').to_string() }).collect();
+                println!("{}", output.join(" "));
             }
 
             "pwd" => match current_dir() {
@@ -60,18 +61,15 @@ fn main() {
             },
 
             "cat" => {
-                if args.is_empty() {
-                    let mut line = String::new();
-                    while io::stdin().read_line(&mut line).unwrap() > 0 {
-                        print!("{}", line); line.clear();
+                if let Err(e) = Cat::new(args.clone()).execute(&mut rl) {
+                        eprintln!("{}", e);
                     }
-                } else {
-                    for file in &args {
-                        match fs::read_to_string(file) {
-                            Ok(content) => print!("{}", content),
-                            Err(_) => { println!("cat: {}: No such file or directory", file) }
-                        }
-                    }
+            }
+
+            "ls" => {
+                let command = LsCommand;
+                if let Err(e) = command.execute(args.clone()) {
+                    eprintln!("{}", e);
                 }
             }
 
@@ -100,7 +98,7 @@ fn main() {
             }
 
             "cd" => {
-                let new_dir = if args.is_empty() {
+                let new_dir = if args.is_empty() { 
                     dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"))
                 } else {
                     if args.len() != 1 { println!("cd: too many arguments"); continue;}
@@ -109,7 +107,13 @@ fn main() {
                 
                 if let Err(e) = set_current_dir(&new_dir) { println!("cd: {}: {}", new_dir.display(), e) }
             }
+            
+            "clear" => {
+                println!("\x1B[2J\x1B[H");
+                 stdout().flush().unwrap();
+            }
 
+                
             _ => println!("Command '{}' not found", cmd),
         }
     }

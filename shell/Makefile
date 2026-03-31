@@ -1,6 +1,6 @@
 build:
-	@cargo build
-
+	@cargo build --quiet
+	
 run:
 	@echo "███████╗██╗  ██╗███████╗██╗     ██╗"
 	@echo "██╔════╝██║  ██║██╔════╝██║     ██║"

@@ -3,6 +3,7 @@ pub mod mkdir;
 pub mod mv;
 pub mod cp;
 pub mod ls;
+pub mod cat;
 
 
 pub trait Command {
