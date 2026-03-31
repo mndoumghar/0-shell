@@ -6,6 +6,7 @@ use cmd::cat::Cat;
 use cmd::mkdir::Mkdir;
 use cmd::mv::Mv;
 use cmd::rm::Rm;
+use cmd::help::*;
 use cmd::ls::LsCommand;
 use cmd::Command;
 use rustyline::error::ReadlineError;
@@ -29,7 +30,7 @@ fn main() {
         let display_dir = cwd.to_string_lossy().replace(&var("HOME").unwrap_or_default(), "~");
 
         // read command line
-        let input = match rl.readline(&format!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", display_dir)) {
+        let input = match rl.readline(&format!("\x1b[32m127.0.0.1@z01:\x1b[0m{}$ ", format!("\x1b[34m{}\x1b[0m", display_dir))) {
             Ok(line) => line,
             Err(ReadlineError::Interrupted) => {continue;}
                 Err(ReadlineError::Eof) => { println!("exit"); break;}
@@ -52,7 +53,7 @@ fn main() {
 
             "echo" => {
                 let output: Vec<String> = args.iter().map(|s| {
-                    s.trim_matches(|c| c == '"').to_string()
+                    s.trim_matches(|c| c == '"' || c == '\'').to_string()
                 }).collect();
                 println!("{}", output.join(" "));
             }
@@ -114,9 +115,12 @@ fn main() {
                 println!("\x1B[2J\x1B[H");
                  stdout().flush().unwrap();
             }
-
                 
+            "help" => print_help(),
+            
             _ => println!("Command '{}' not found", cmd),
+            
+
         }
     }
 }

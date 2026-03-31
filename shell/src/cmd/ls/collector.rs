@@ -33,8 +33,8 @@ pub fn collect_directory_entries(dir: &Path, show_hidden: bool) -> Result<Vec<Pa
     let mut entries = Vec::new();
 
     if show_hidden {
-        entries.push(dir.join("."));
-        entries.push(dir.join(".."));
+        entries.push(PathBuf::from("."));
+        entries.push(PathBuf::from(".."));
     }
 
     let read_dir = fs::read_dir(dir).map_err(|e| {

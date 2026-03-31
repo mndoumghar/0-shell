@@ -46,15 +46,35 @@ impl Cp {
             }
             
         } else {
-            let src = &self.targets[0];
-            if src == dest {  
-                 return Err(ShellError::Other(format!("cp: '{}' and '{}' are the same file", src, dest).into()));
-            }
-            if !Path::new(src).is_file() {
-                return Err(ShellError::Other(format!("cp: '{}' is not a file", src).into()));
-            }
-            fs::copy(src, dest)?;
-        }
+    let src_path = Path::new(&self.targets[0]);
+    let dest_path = Path::new(dest);
+
+    // source and destination are the same file
+    if src_path == dest_path {
+        return Err(ShellError::Other(format!(
+            "cp: '{}' and '{}' are the same file",
+            src_path.display(),
+            dest_path.display()
+        ).into()));
+    }
+
+    // source must be a file
+    if !src_path.is_file() {
+        return Err(ShellError::Other(format!(
+            "cp: '{}' is not a file",
+            src_path.display()
+        ).into()));
+    }
+
+    // if destination is a directory, copy inside it using source filename
+    let final_dest = if dest_path.is_dir() {
+        dest_path.join(src_path.file_name().unwrap())
+    } else {
+        dest_path.to_path_buf()
+    };
+
+    fs::copy(src_path, final_dest)?;
+}
 
         Ok(())
     }

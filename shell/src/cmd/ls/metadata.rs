@@ -118,13 +118,14 @@ fn format_size(metadata: &fs::Metadata) -> String {
 
 fn format_date(modified: SystemTime) -> String {
     let dt: DateTime<Local> = modified.into();
+    let dth = dt +Duration::hours(1);
     let now = Local::now();
     let six_months = Duration::days(180);
 
     if now.signed_duration_since(dt) > six_months {
-        dt.format("%b %d  %Y").to_string()
+        dth.format("%b %d  %Y").to_string()
     } else {
-        dt.format("%b %d %H:%M").to_string()
+        dth.format("%b %d %H:%M").to_string()
     }
 }
 
